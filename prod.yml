@@ -2,6 +2,20 @@ version: "3.4"
 services:
   nopcommerce_web:
     build: .
+    labels:
+      - traefik.http.routers.grav-${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN_NAME}`)
+      - traefik.http.routers.grav-${COMPOSE_PROJECT_NAME}.tls=true
+      - traefik.http.routers.grav-${COMPOSE_PROJECT_NAME}.tls.certresolver=lets-encrypt
+      - traefik.port=80
+      # www -> non-www
+      - "traefik.http.middlewares.www-redirect-${COMPOSE_PROJECT_NAME}.redirectregex.regex=^https://www.${DOMAIN_NAME}/(.*)"
+      - "traefik.http.middlewares.www-redirect-${COMPOSE_PROJECT_NAME}.redirectregex.replacement=https://${DOMAIN_NAME}/$${1}"
+      - "traefik.http.middlewares.www-redirect-${COMPOSE_PROJECT_NAME}.redirectregex.permanent=true"
+      - "traefik.http.routers.http-catchallwww-${COMPOSE_PROJECT_NAME}.middlewares=www-redirect"
+      # needed so we can offer a valid ssl cert for www. during redirect
+      - traefik.http.routers.http-catchallwww-${COMPOSE_PROJECT_NAME}.rule=Host(`www.${DOMAIN_NAME}`)
+      - traefik.http.routers.http-catchallwww-${COMPOSE_PROJECT_NAME}.tls=true
+      - traefik.http.routers.http-catchallwww-${COMPOSE_PROJECT_NAME}.tls.certresolver=lets-encrypt
     container_name: nopcommerce
     ports:
       - "8080:80"
